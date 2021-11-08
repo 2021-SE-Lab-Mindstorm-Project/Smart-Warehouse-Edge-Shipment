@@ -5,10 +5,12 @@ from django.db import models
 RED = 1
 WHITE = 2
 YELLOW = 3
+BLUE = 4
 item_type_choices = [
     (RED, 'Red'),
     (WHITE, 'White'),
     (YELLOW, 'Yellow'),
+    (BLUE, 'Blue')
 ]
 
 LEFT = 1
