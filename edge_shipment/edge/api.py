@@ -10,6 +10,7 @@ from edge_shipment.settings import settings
 from . import models
 from .models import Sensory, Order, Message, Status
 
+waited_from = None
 
 # Serializer
 class SensoryListSerializer(serializers.ListSerializer):
@@ -60,11 +61,11 @@ class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     http_method_names = ['post']
-    waited_from = None
 
     @swagger_auto_schema(
         responses={400: "Bad request", 204: "Invalid Message Title / Invalid Message Sender / Not allowed"})
     def create(self, request, *args, **kwargs):
+        global waited_from
         super().create(request, *args, **kwargs)
         sender = int(request.data['sender'])
         title = request.data['title']
@@ -88,13 +89,13 @@ class MessageViewSet(viewsets.ModelViewSet):
                 if target_order is not None:
                     dest = target_order.dest
                     target_order.delete()
-                    self.waited_from = None
-                elif self.waited_from is not None and datetime.datetime.now() - self.waited_from > datetime.timedelta(
+                    waited_from = None
+                elif waited_from is not None and datetime.datetime.now() - waited_from > datetime.timedelta(
                         seconds=100):
                     dest = 3
                 else:
-                    if self.waited_from is None:
-                        self.waited_from = datetime.datetime.now()
+                    if waited_from is None:
+                        waited_from = datetime.datetime.now()
                     return Response("Not allowed", status=204)
 
                 process_message = {'sender': models.EDGE_SHIPMENT,
@@ -118,7 +119,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 
             if title == 'Start':
                 Order.objects.all().delete()
-                self.waited_from = None
+                waited_from = None
 
                 if len(Status.objects.all()) == 0:
                     current_state = Status()
