@@ -70,6 +70,4 @@ class Message(models.Model):
 
 class Status(models.Model):
     status = models.BooleanField(default=False)
-    experiment_type = models.TextField(default='')
-    dm_type = models.TextField(default='')
     updated = models.DateTimeField(auto_now=datetime.datetime.now)
