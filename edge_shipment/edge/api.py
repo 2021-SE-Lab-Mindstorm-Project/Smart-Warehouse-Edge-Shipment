@@ -10,7 +10,7 @@ from edge_shipment.settings import settings
 from . import models
 from .models import Sensory, Order, Message, Status
 
-waited_from = None
+experiment_type = 'SAS'
 
 # Serializer
 class SensoryListSerializer(serializers.ListSerializer):
@@ -65,7 +65,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         responses={400: "Bad request", 204: "Invalid Message Title / Invalid Message Sender / Not allowed"})
     def create(self, request, *args, **kwargs):
-        global waited_from
+        global experiment_type
         super().create(request, *args, **kwargs)
         sender = int(request.data['sender'])
         title = request.data['title']
@@ -83,19 +83,21 @@ class MessageViewSet(viewsets.ModelViewSet):
                 return Response("Not allowed", status=204)
 
             if title == 'Sending Check':
+                if experiment_type == 'SAS':
+                    process_message = {'sender': models.EDGE_SHIPMENT,
+                                       'title': 'SAS Check'}
+                    response = requests.post(settings['cloud_address'] + '/api/message/', data=process_message)
+                    if response.status_code == 204:
+                        return Response("Not allowed", status=204)
+                    return Response(status=201)
+
                 item_type = int(request.data['msg'])
                 target_order = find_target_order(item_type)
 
                 if target_order is not None:
                     dest = target_order.dest
                     target_order.delete()
-                    waited_from = None
-                elif waited_from is not None and datetime.datetime.now() - waited_from > datetime.timedelta(
-                        seconds=100):
-                    dest = 3
                 else:
-                    if waited_from is None:
-                        waited_from = datetime.datetime.now()
                     return Response("Not allowed", status=204)
 
                 process_message = {'sender': models.EDGE_SHIPMENT,
@@ -118,8 +120,8 @@ class MessageViewSet(viewsets.ModelViewSet):
                 return Response(status=201)
 
             if title == 'Start':
+                experiment_type = request.data['msg']
                 Order.objects.all().delete()
-                waited_from = None
 
                 if len(Status.objects.all()) == 0:
                     current_state = Status()
