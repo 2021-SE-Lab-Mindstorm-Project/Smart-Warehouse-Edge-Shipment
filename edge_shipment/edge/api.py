@@ -93,7 +93,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 
                     process_message = {'sender': models.EDGE_SHIPMENT,
                                        'title': 'Order Processed',
-                                       'msg': json.dumps({'item_type': item_type, 'dest': dest})}
+                                       'msg': json.dumps({'item_type': item_type, 'dest': int(response.text)})}
                     requests.post(settings['edge_repository_address'] + '/api/message/', data=process_message)
                     requests.post(settings['cloud_address'] + '/api/message/', data=process_message)
 
