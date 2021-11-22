@@ -83,15 +83,22 @@ class MessageViewSet(viewsets.ModelViewSet):
                 return Response("Not allowed", status=204)
 
             if title == 'Sending Check':
+                item_type = int(request.data['msg'])
                 if experiment_type == 'SAS':
                     process_message = {'sender': models.EDGE_SHIPMENT,
                                        'title': 'SAS Check'}
                     response = requests.post(settings['cloud_address'] + '/api/message/', data=process_message)
                     if response.status_code == 204:
                         return Response("Not allowed", status=204)
-                    return Response(status=201)
 
-                item_type = int(request.data['msg'])
+                    process_message = {'sender': models.EDGE_SHIPMENT,
+                                       'title': 'Order Processed',
+                                       'msg': json.dumps({'item_type': item_type, 'dest': dest})}
+                    requests.post(settings['edge_repository_address'] + '/api/message/', data=process_message)
+                    requests.post(settings['cloud_address'] + '/api/message/', data=process_message)
+
+                    return Response(int(response.text), status=201)
+
                 target_order = find_target_order(item_type)
 
                 if target_order is not None:
