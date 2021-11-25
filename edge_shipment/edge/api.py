@@ -86,7 +86,8 @@ class MessageViewSet(viewsets.ModelViewSet):
                 item_type = int(request.data['msg'])
                 if experiment_type == 'SAS':
                     process_message = {'sender': models.EDGE_SHIPMENT,
-                                       'title': 'SAS Check'}
+                                       'title': 'SAS Check',
+                                       'msg': item_type}
                     response = requests.post(settings['cloud_address'] + '/api/message/', data=process_message)
                     if response.status_code == 204:
                         return Response("Not allowed", status=204)
